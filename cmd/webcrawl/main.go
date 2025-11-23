@@ -1,20 +1,21 @@
 package main
 
 import (
-	"log"
+	"time"
 
-route "github.com/quandev306/webcrawl/api/route"
-"github.com/quandev306/webcrawl/bootstrap"
-"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
+	"github.com/quandev306/webcrawl/api/route"
+	"github.com/quandev306/webcrawl/bootstrap"
 )
 
 func main() {
-	r := gin.Default()
-	r.GET("/healthz", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
+	app := bootstrap.App()
+	env := app.Env
+	db := app.Mongo.Database(env.DBName)
+	defer app.CloseDBConnection()
 
-	if err := r.Run(":8080"); err != nil {
-		log.Fatalf("server error: %v", err)
-	}
+	timeout := time.Duration(env.ContextTimeout) * time.Second
+	r := gin.Default()
+	route.Setup(env, timeout, db, r)
+	r.Run(env.ServerAddress)
 }
